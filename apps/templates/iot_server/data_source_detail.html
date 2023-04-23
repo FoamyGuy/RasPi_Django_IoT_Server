@@ -1,0 +1,193 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} UI Store {% endblock %}
+
+{% block style %}
+
+  <style>
+    {% comment %}  th{
+          font-weight: bold;
+      }{% endcomment %}
+    .full_width {
+        width: 100%;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+
+  <div class="my-3 my-md-5">
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title">
+          Data Source
+        </h1>
+      </div>
+      <div class="row row-cards">
+        <div class="col-lg-3">
+          <div class="row">
+            <div class="col-md-6 col-lg-12">
+              <div class="card">
+                <div class="card-body">
+                  <div class="mb-4">
+                    <h3>{{ data_source.name }}</h3>
+                  </div>
+                  <strong><label>Created Date:</label></strong>
+                  <p>{{ data_source.created_at|date:"m-d-Y" }}</p>
+                  <strong><label>Value Count:</label></strong>
+                  <span>{{ data_source.value_count }}</span><br>
+                  <strong><label>Token:</label></strong>
+                  <div class="input-group">
+                    <button class="btn btn-danger"
+                            onclick="refresh_data_source_token({{ data_source.id }});"><i
+                        class="fa fa-refresh"></i></button>
+                    <input class="form-control" id="token_input" type="password" value="{{ data_source.token }}">
+                    <span class="input-group-append">
+                      <button class="btn btn-primary"
+                              onclick="copy_token({{ data_source.id }});  "><i
+                          class="fa fa-clipboard"></i></button>
+                    </span>
+                  </div>
+                  <div class="form-group">
+                    <button id="delete_btn" class="btn btn-danger mt-4 full_width"
+                            onclick="show_delete_confirmation();">Delete Data Source <i
+                        class="fa fa-trash"></i>
+                    </button>
+                  </div>
+
+                  <div class="form-group delete_confirmation d-none">
+                    <p>Are you sure that you want to permanently delete this data source? Type the name of the data
+                      source below and click the button to delete permanently.</p>
+                    <div class="">
+                      <input class="form-control" id="delete_confirm_input">
+                      <button id="confirm_delete_btn" class="btn btn-danger mt-4 full_width">Delete Permanently <i
+                          class="fa fa-trash"></i>
+                        <button id="cancel_delete_btn" class="btn btn-outline-primary mt-3 full_width"
+                                onclick="hide_delete_confirmation();">Cancel
+                        </button>
+                    </div>
+                  </div>
+
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-9">
+          <div class="card">
+            <div id="table-default" class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                <tr>
+                  <td>
+                    {% if not type_filter %}
+                      <a href="{% url 'download_values' data_source_id=data_source.id %}"
+                         class="btn btn-primary">Download CSV <i class="fa fa-download"></i></a>
+                    {% else %}
+                      <a href="{% url 'download_values' data_source_id=data_source.id %}?type_filter={{ type_filter }}"
+                         class="btn btn-primary">Download CSV <i class="fa fa-download"></i></a>
+                    {% endif %}
+                  </td>
+                  <td class="">
+                    <p class="h3">Count: {{ data_source.value_count }}</p>
+                  </td>
+                  <td>
+                    <select id="type_filter_select" class="form-control form-select">
+
+                      <option value="-1" selected>Type Filter</option>
+                      {% for possile_type in value_types %}
+                        <option value="{{ possile_type.0 }}">{{ possile_type.0 }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Value</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for data_value in data_values %}
+                  <tr>
+                    <td>{{ data_value.created_at }}</td>
+                    <td>{{ data_value.value.type }}</td>
+                    <td>{{ data_value.value.value }}<small>{{ data_value.value.unit }}</small></td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+  <script>
+      let $typeFilterSelect = document.querySelector("#type_filter_select");
+      $typeFilterSelect.onchange = function () {
+          console.log($typeFilterSelect.value);
+          if ('URLSearchParams' in window) {
+              let searchParams = new URLSearchParams(window.location.search);
+              searchParams.set("type_filter", $typeFilterSelect.value);
+              window.location.search = searchParams.toString();
+          }
+      }
+
+      function show_delete_confirmation() {
+          console.log("click delete!");
+          document.querySelector(".delete_confirmation").classList.remove("d-none");
+          document.querySelector("#delete_btn").classList.add("d-none");
+      }
+
+      function hide_delete_confirmation() {
+          console.log("click delete!");
+          document.querySelector(".delete_confirmation").classList.add("d-none");
+          document.querySelector("#delete_btn").classList.remove("d-none");
+          document.querySelector("#delete_confirm_input").value = "";
+      }
+
+      function refresh_data_source_token(data_source_id) {
+          let data = {};
+          let csrftoken = getCookie('csrftoken');
+          fetch(`/refresh_data_source_token/${data_source_id}/`, {
+              method: 'POST',
+              body: JSON.stringify(data),
+              headers: {"X-CSRFToken": csrftoken},
+          }).then(function (resp) {
+              console.log(resp);
+              if (resp.status === 200) {
+                  window.location.reload();
+              }
+          });
+      }
+
+      function copy_token(data_source_id) {
+          navigator.clipboard.writeText(document.querySelector(`.token_input_${data_source_id}`).value);
+      }
+
+      // The following function are copying from
+      // https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
+      function getCookie(name) {
+          var cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              var cookies = document.cookie.split(';');
+              for (var i = 0; i < cookies.length; i++) {
+                  var cookie = cookies[i].trim();
+                  // Does this cookie string begin with the name we want?
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+  </script>
+{% endblock javascripts %}

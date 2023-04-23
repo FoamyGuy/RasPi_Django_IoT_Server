@@ -1,0 +1,6 @@
+POST http://127.0.0.1:8000/post_data/
+
+{
+"data_source_token": "eR-wPFghJKy_wlAMMLNxTW0iaqgKbnKz9QXK_oKxamNAITYsbqvbA7NtUCmquYec8zHztwt2h3CAle-E_di5cw",
+"data_value": {"type": "humidity", "value": 29.32, "unit": "%"}
+}

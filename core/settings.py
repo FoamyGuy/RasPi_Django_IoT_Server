@@ -14,27 +14,37 @@ CORE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY', default='S#perS3crEt_1122')
 
+
+FIELD_ENCRYPTION_KEYS = [
+    "771c9b841a82d9c8947a5781c493aa2cd995ac7709542a167e74611442e18d7a"
+]
+
+HASH_KEY = "caf78fb43483e5e63439dc8ecc9d44669aa5cd87b1df8cbea262c969defcc7ee"
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 # load production server from .env
-ALLOWED_HOSTS        = ['localhost', 'localhost:85', '127.0.0.1', config('SERVER', default='127.0.0.1')]
-CSRF_TRUSTED_ORIGINS = ['http://localhost:85', 'http://127.0.0.1', 'https://' + config('SERVER', default='127.0.0.1')]
+ALLOWED_HOSTS        = ['192.168.1.245', 'localhost', 'localhost:8000', '127.0.0.1', config('SERVER', default='127.0.0.1')]
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1', 'https://' + config('SERVER', default='127.0.0.1')]
 
 # Application definition
 
 INSTALLED_APPS = [
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'encrypted_fields',
     'apps.home',  # Enable the inner home (home)
-    'apps.iot_server'
+    'apps.iot_server',
 ]
 
 MIDDLEWARE = [
+    #'apps.iot_server.middleware.DisableCSRF',  # custom middleware for API'
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -71,6 +81,10 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
+if DEBUG:
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_HTTPONLY = False
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',

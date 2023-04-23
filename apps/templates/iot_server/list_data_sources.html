@@ -1,0 +1,141 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Page Blank {% endblock %}
+
+{% block style %}
+  <style>
+      .token_input {
+          width: 40px !important;
+      }
+  </style>
+
+{% endblock %}
+{% block content %}
+
+  <div class="my-3 my-md-5">
+    <div class="container">
+
+      <div class="page-header">
+        <h1 class="page-title">
+          Data Sources
+        </h1>
+        <a href="{% url 'new_data_source' %}" class="btn btn-primary ml-3">New Data Source <i class="fa fa-plus"></i></a>
+      </div>
+      <div class="card">
+        <div class="table_container">
+          <table class="table">
+            <thead>
+            <tr>
+              <th>Active</th>
+              <th>Name</th>
+              <th>Local</th>
+              <th>Created At</th>
+              <th>Token</th>
+              <th>Values</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for data_source in data_sources %}
+              <tr>
+                <td>
+                  {% comment %}<label class="custom-control custom-checkbox">
+                  <input type="checkbox" class="custom-control-input" name="example-checkbox1" value="option1"
+                         checked="">
+                  <span class="custom-control-label"></span>
+                </label>{% endcomment %}
+                  {% comment %}                <input type="checkbox" class="custom-control-input" name="example-checkbox1" value="option1"
+                         checked="">{% endcomment %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value=""
+                           {% if data_source.activated %}checked{% endif %}>
+                  </div>
+                </td>
+                <td>
+                  <a href="{% url 'data_source' data_source_id=data_source.id %}">
+                    {{ data_source.name }}
+                  </a>
+                </td>
+                <td>
+                  {% if data_source.local %}
+                    <i class="fa fa-check"></i>
+                  {% endif %}
+                </td>
+                <td>
+                  {{ data_source.created_at }}
+                </td>
+                <td>
+                  {% comment %}<input value="{{ data_source.token }}">{% endcomment %}
+                  <div class="input-group">
+                  <span class="input-group-append">
+                      <button class="btn btn-danger"
+                              onclick="refresh_data_source_token({{ data_source.id }});"><i
+                          class="fa fa-refresh"></i></button>
+                    </span>
+                    <input class="form-control token_input token_input_{{ data_source.id }}" type="password"
+                           value="{{ data_source.token }}">
+                    <span class="input-group-append">
+                      <button class="btn btn-primary"
+                              onclick="copy_token({{ data_source.id }})"><i
+                          class="fa fa-clipboard"></i></button>
+                    </span>
+
+                  </div>
+                </td>
+                <td>
+                  {{ data_source.value_count }}
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+{% csrf_token %}
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+  <script>
+      function refresh_data_source_token(data_source_id) {
+          let data = {};
+          let csrftoken = getCookie('csrftoken');
+          fetch(`/refresh_data_source_token/${data_source_id}/`, {
+              method: 'POST',
+              body: JSON.stringify(data),
+              headers: {"X-CSRFToken": csrftoken},
+          }).then(function(resp){
+              console.log(resp);
+              if (resp.status === 200){
+                  window.location.reload();
+              }
+          });
+      }
+
+      function copy_token(data_source_id){
+          navigator.clipboard.writeText(document.querySelector(`.token_input_${data_source_id}`).value);
+      }
+
+      // The following function are copying from
+      // https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
+      function getCookie(name) {
+          var cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              var cookies = document.cookie.split(';');
+              for (var i = 0; i < cookies.length; i++) {
+                  var cookie = cookies[i].trim();
+                  // Does this cookie string begin with the name we want?
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+  </script>
+
+
+{% endblock javascripts %}
